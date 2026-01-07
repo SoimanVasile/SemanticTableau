@@ -9,14 +9,14 @@ pub enum Formula {
     Implies(Box<Formula>, Box<Formula>),
 }
 
-impl fmt::Debug for Formula {
+impl fmt::Display for Formula {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Formula::Var(n) => write!(f, "{}", n),
-            Formula::Not(inner) => write!(f, "¬{:?}", inner),
-            Formula::And(l, r) => write!(f, "({:?} ∧ {:?})", l, r),
-            Formula::Or(l, r) => write!(f, "({:?} ∨ {:?})", l, r),
-            Formula::Implies(l, r) => write!(f, "({:?} → {:?})", l, r),
+            Formula::Not(inner) => write!(f, "¬{}", inner), 
+            Formula::And(l, r) => write!(f, "({} ∧ {})", l, r),
+            Formula::Or(l, r) => write!(f, "({} ∨ {})", l, r),
+            Formula::Implies(l, r) => write!(f, "({} → {})", l, r),
         }
     }
 }

@@ -1,6 +1,4 @@
 use crate::formula::Formula;
-use std::iter::Peekable;
-use std::str::Chars;
 
 #[derive(Debug, Clone, PartialEq)]
 enum Token {
