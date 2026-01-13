@@ -1,6 +1,8 @@
 use std::fmt;
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Debug, Deserialize)]
 pub enum Formula {
     Var(String),
     Not(Box<Formula>),

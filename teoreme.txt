@@ -1,0 +1,8 @@
+prove P -> P
+prove P | !P
+prove !(P & Q) -> (!P | !Q)
+prove ((P -> Q) & P) -> Q
+prove ((P -> Q) & !Q) -> !P
+prove ((P -> Q) & (Q -> R)) -> (P -> R)
+prove ((P -> Q) -> P) -> P
+prove (P -> Q) -> (Q -> P)

@@ -1,15 +1,24 @@
 use std::io::{self, Write};
 use colored::*;
 
-mod formula;
-mod tableau;
-mod parser;
-
-use tableau::{build_tableau, print_tree, node::NodeStatus};
-use parser::parse_formula;
-use formula::Formula;
-
+use LC::tableau::{build_tableau, print_tree, printer::reset_speed, node::NodeStatus};
+use LC::parser::parse_formula;
+use LC::formula::Formula;
 fn main() {
+
+    let logo = r#"
+  _______    _      _                  
+ |__   __|  | |    | |                 
+    | | __ _| |__  | | ___  __ _ _   _ 
+    | |/ _` | '_ \ | |/ _ \/ _` | | | |
+    | | (_| | |_) || |  __/ (_| | |_| |
+    |_|\__,_|_.__(_)_|\___|\__,_|\__,_|
+             LOGIC SOLVER v1.0
+    "#;
+
+    println!("{}", logo.bold().cyan());
+
+
     println!("{}", "=== LOGIC SOLVER (Tabele Semantice) ===".bold().cyan());
     println!("Moduri de utilizare:");
     println!("  1. Verificare simplă:  {}", "(P & Q)".yellow());
@@ -21,7 +30,9 @@ fn main() {
         io::stdout().flush().unwrap();
 
         let mut input_line = String::new();
-        io::stdin().read_line(&mut input_line).expect("Eroare la citire");
+        if io::stdin().read_line(&mut input_line).expect("Eroare la citire") == 0 {
+            break;
+        }
         let input = input_line.trim();
 
         if input.eq_ignore_ascii_case("exit") {
@@ -45,9 +56,10 @@ fn main() {
             println!("Metodă: Încercăm să demonstrăm că Negația este o Contradicție.\n");
 
             let negated_formula = Formula::not(parsed_formula.clone());
-            println!("Formula Negată: {}", negated_formula);
+            println!("Formula Negată: {}", negated_formula.to_string().bold().yellow());
 
             let root = build_tableau(vec![negated_formula]);
+            reset_speed();
             print_tree(&root, "".to_string(), true);
 
             println!("{}", "---------------------------------------".dimmed());
@@ -66,9 +78,10 @@ fn main() {
 
         } else {
             println!("Mod: {}", "Verificare Satisfiabilitate".bold().blue());
-            println!("Formula Parsată: {}", parsed_formula);
+            println!("Formula Parsată: {}", parsed_formula.to_string().bold().yellow());
             
             let root = build_tableau(vec![parsed_formula]);
+            reset_speed();
             print_tree(&root, "".to_string(), true);
             
             println!("{}", "---------------------------------------".dimmed());
