@@ -83,4 +83,7 @@ echo -e "${CYAN}DEMO FINALIZAT.${NC}"
 echo -e "Intrare în Modul Manual (Scrie 'exit' pentru a ieși)..."
 echo -e "${YELLOW}========================================${NC}"
 
+paplay ~/Downloads/heibaieti.mp3
+
 cargo run -q
+
