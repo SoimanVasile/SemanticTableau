@@ -4,7 +4,7 @@ use colored::*;
 pub fn print_tree(node: &TableauNode, prefix: String, is_last: bool) {
 
     let marker = if is_last { "└── " } else { "├── " };
-    
+
     let forms_str = node.formulas.iter()
         .map(|f| format!("{}", f))
         .collect::<Vec<_>>()

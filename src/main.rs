@@ -31,64 +31,86 @@ fn main() {
 }
 
 fn run_tableau() {
-    println!("{}", "--- MOD LOGICĂ ---".purple());
-    println!("Scrie formula (ex: P & Q) sau 'prove (P -> P)' pentru a demonstra.");
+    println!("{}", "--- MOD LOGICĂ (TABLE SEMANTICE) ---".purple().bold());
+    
+    // 1. Prompt cu exemplul colorat în GALBEN
+    println!("Instrucțiune: Introdu formula logică pentru analiză.");
+    println!("Exemplu valid: {} sau {}", 
+        "P & (Q -> P)".yellow(), 
+        "prove (P -> P)".yellow()
+    );
     
     let input = ui::read_line("Logic > ");
     if input.is_empty() { return; }
 
-    // 1. Detectăm dacă utilizatorul vrea demonstrație
     let (is_proof_mode, clean_input) = if input.trim().to_lowercase().starts_with("prove ") {
-        (true, &input.trim()[6..]) // Sărim peste "prove "
+        (true, &input.trim()[6..])
     } else {
         (false, input.as_str())
     };
 
-    // 2. Parsăm formula
-    let parsed = parse_formula(clean_input);
+    let parsed_formula = parse_formula(clean_input);
 
-    // 3. Pregătim formula pentru Tableau
-    // Dacă e 'prove', NEGĂM formula. Dacă negația e o contradicție, originalul e valid.
-    let target_formula = if is_proof_mode {
-        println!("Mod: {}", "Demonstrație (Negăm formula pt a căuta contradicția)".purple());
-        Formula::not(parsed.clone())
-    } else {
-        println!("Mod: {}", "Verificare Satisfiabilitate".blue());
-        parsed.clone()
-    };
+    println!("{}", "--------------------------------------------------".dimmed());
 
-    // 4. Construim arborele
-    let root = build_tableau(vec![target_formula]);
-    print_tree(&root, "".to_string(), true);
+    // 2. Afișăm formula parsată complet în GALBEN (ca text simplu, confirmare)
+    println!("Formula Parsată (Interpretată): {}", parsed_formula.to_string().yellow().bold());
 
-    println!("{}", "---------------------------------------".dimmed());
-
-    // 5. Interpretăm rezultatul
     if is_proof_mode {
-        // Mod DEMONSTRAȚIE
+        // --- MOD DEMONSTRAȚIE (Explicații Detaliate) ---
+        println!("\n{}", "=== ETAPA 1: DEFINIREA PROBLEMEI ===".purple().bold());
+        println!("{}: Vrem să demonstrăm că formula este o {}","Scop".blue().bold(), "TAUTOLOGIE".green().bold());
+        println!("      (adică este adevărată indiferent de valorile variabilelor).");
+        println!("{}: {}", "Metodă".blue().bold(), "REDUCERE LA ABSURD".red().bold());
+        println!("{}: Presupunem ipoteza contrară (că formula ar putea fi Falsă).", "Pasul A".blue().bold());
+        println!("{}: Generăm arborele semantic pentru NEGAȚIE.", "Pasul B".blue().bold());
+        println!("{}: Dacă toate ramurile duc la contradicții (se închid), presupunerea noastră e greșită, deci formula originală e Adevărată.", "Pasul C".blue().bold());
+
+        let negated_formula = Formula::not(parsed_formula.clone());
+        
+        println!("\n{}", "=== ETAPA 2: GENERARE ARBORE (Visualizare) ===".purple().bold());
+        println!("Formula de lucru (Negată): {}", negated_formula.to_string().yellow().bold());
+        println!("\n{}", "Se construiește arborele...".cyan().bold());
+        
+        let root = build_tableau(vec![negated_formula]);
+        print_tree(&root, "".to_string(), true);
+
+        println!("\n{}", "=== ETAPA 3: CONCLUZIE FINALĂ ===".purple().bold());
+        println!("{}", "--------------------------------------------------".dimmed());
+        
         match root.status {
             tableau::node::NodeStatus::Closed => {
-                println!("{}", "REZULTAT: TAUTOLOGIE (ADEVĂRAT)".on_green().white().bold());
-                println!("Negația formulei este o contradicție (toate ramurile închise).");
-                println!("Deci formula originală '{}' este mereu adevărată.", clean_input.bold());
+                println!("{}: {}","REZULTAT".blue().bold(), " TAUTOLOGIE DEMONSTRATĂ ".on_green().white().bold());
+                println!("{}: Toate ramurile negației s-au închis (au generat contradicții).", "Analiză:".blue().bold());
+                println!("{}:   Nu există nicio situație în care formula să fie Falsă.", "Logica".blue().bold());
+                println!("{}:  Formula {} este validă logic.", "Verdict".blue().bold(), clean_input.bold());
             },
             _ => {
-                println!("{}", "REZULTAT: NU ESTE TAUTOLOGIE (FALS)".on_red().white().bold());
-                println!("Negația formulei are ramuri deschise (există contra-exemple).");
+                println!("{}: {}","REZULTAT".blue().bold(), " NU ESTE TAUTOLOGIE ".on_red().white().bold());
+                println!("{}  Arborele negației a rămas cu ramuri deschise.", "Analiză:".blue().bold());
+                println!("{}:   Am găsit cel puțin un scenariu (Contra-exemplu) unde negația e Adevărată.", "Logica".blue().bold());
+                println!("{}:  Formula originală poate fi falsă.", "Verdict".blue().bold());
             }
         }
     } else {
-        // Mod SATISFIABILITATE
-        match root.status {
-            tableau::node::NodeStatus::Closed => {
-                println!("{}", "Formulă Nesatisfiabilă (Contradicție)".red());
-            },
-            _ => {
-                println!("{}", "Formulă Satisfiabilă (Există soluții)".green());
-            }
+        // --- MOD SATISFIABILITATE ---
+        println!("\n{}", "=== VERIFICARE SATISFIABILITATE ===".purple().bold());
+        println!("{}: Căutăm o combinație de valori (Model) pentru care formula e Adevărată.", "Scop".blue().bold());
+        
+        let root = build_tableau(vec![parsed_formula]);
+        println!("\n{}:", "Arborele generat".cyan().bold());
+        print_tree(&root, "".to_string(), true);
+        
+        println!("\n{}", "=== CONCLUZIE ===".purple().bold());
+        if let tableau::node::NodeStatus::Closed = root.status {
+            println!("{}: {}", "REZULTAT".blue().bold(), " CONTRADICȚIE (UNSAT) ".on_red().white().bold());
+            println!("Formula nu poate fi adevărată niciodată.");
+        } else {
+            println!("{}: {}", "REZULTAT".blue().bold(), " SATISFIABILĂ (SAT) ".on_green().white().bold());
+            println!("Există ramuri deschise. Orice ramură deschisă reprezintă o soluție posibilă.");
         }
     }
-    println!();
+    println!("\n");
 }
 
 fn run_minimizer() {

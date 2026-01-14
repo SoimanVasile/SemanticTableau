@@ -3,8 +3,8 @@ use colored::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Term {
-    pub bits: Vec<i8>, // 0, 1, sau -1 (pentru "don't care")
-    pub used: bool,    // Folosit în simplificare?
+    pub bits: Vec<i8>,
+    pub used: bool,
 }
 
 impl Term {
@@ -15,6 +15,20 @@ impl Term {
         }
     }
 
+    pub fn to_string(&self, var_names: &[String]) -> String {
+        let mut s = String::new();
+        let mut first = true;
+        for (i, &b) in self.bits.iter().enumerate() {
+            if b != -1 {
+                if !first { s.push_str(""); }
+                if b == 0 { s.push('!'); }
+                s.push_str(&var_names[i]);
+                first = false;
+            }
+        }
+        if s.is_empty() { "1 (TRUE)".to_string() } else { s }
+    }
+
     pub fn combine(&self, other: &Term) -> Option<Term> {
         let mut diff_count = 0;
         let mut new_bits = self.bits.clone();
@@ -22,7 +36,7 @@ impl Term {
         for i in 0..self.bits.len() {
             if self.bits[i] != other.bits[i] {
                 diff_count += 1;
-                new_bits[i] = -1; // Devine '-'
+                new_bits[i] = -1;
             }
         }
 
@@ -32,107 +46,187 @@ impl Term {
             None
         }
     }
-
-    // Formatează termenul frumos (ex: A!B)
-    pub fn to_string(&self, var_names: &[String]) -> String {
-        let mut s = String::new();
-        let mut first = true;
-        for (i, &b) in self.bits.iter().enumerate() {
-            if b != -1 { // Dacă nu e "don't care"
-                if !first { s.push_str(""); } // Spațiator opțional
-                if b == 0 { s.push('!'); }
-                s.push_str(&var_names[i]);
-                first = false;
-            }
-        }
-        if s.is_empty() { "1 (TRUE)".to_string() } else { s }
-    }
 }
 
 pub struct BooleanFunction {
     pub var_names: Vec<String>,
     pub minterms: Vec<Vec<u8>>,
+    minterm_indices: HashSet<usize>,
 }
 
 impl BooleanFunction {
     pub fn new(names: Vec<String>, minterms: Vec<Vec<u8>>) -> Self {
-        BooleanFunction { var_names: names, minterms }
-    }
-
-    // Afișează Diagrama Veitch (doar pt 3 variabile)
-    pub fn print_veitch(&self) {
-        if self.var_names.len() != 3 {
-            println!("Diagrama e disponibilă doar pentru 3 variabile momentan.");
-            return;
+        let mut indices = HashSet::new();
+        for bits in &minterms {
+            let mut idx = 0;
+            for &b in bits {
+                idx = (idx << 1) | (b as usize);
+            }
+            indices.insert(idx);
         }
 
-        // Convertim mintermii în set de indici pentru verificare rapidă O(1)
-        let minterm_indices: HashSet<usize> = self.minterms.iter().map(|bits| {
-            let mut idx = 0;
-            for &b in bits { idx = (idx << 1) | (b as usize); }
-            idx
-        }).collect();
+        BooleanFunction { var_names: names, minterms, minterm_indices: indices }
+    }
 
-        let x = &self.var_names[0];
-        let y = &self.var_names[1];
-        let z = &self.var_names[2];
+    pub fn print_veitch(&self) {
+        let n = self.var_names.len();
+        match n {
+            1 => self.print_1var(),
+            2 => self.print_2vars(),
+            3 => self.print_3vars(),
+            4 => self.print_4vars(),
+            5 => self.print_5vars(),
+            _ => println!("Diagramele ASCII sunt suportate doar pentru 1-5 variabile."),
+        }
+    }
 
-        println!("\n=== DIAGRAMA VEITCH ({}, {}, {}) ===", x, y, z);
-        println!("      {0}{1}   {0}{2}   {1}{2}   {1}{0} ({1} {2})", "!".dimmed(), y, z);
-        println!("     +----+----+----+----+");
+    fn get_cell(&self, idx: usize) -> String {
+        if self.minterm_indices.contains(&idx) {
+            " 1 ".green().bold().to_string()
+        } else {
+            " 0 ".dimmed().to_string()
+        }
+    }
 
-        // Gray code logic manual pentru Veitch
-        let col_map = [0, 1, 3, 2]; // 00, 01, 11, 10
+    fn print_1var(&self) {
+        let a = &self.var_names[0];
+        println!("\n=== DIAGRAMA VEITCH ({}) ===", a);
+        println!("      !{}   {} ", a, a);
+        println!("     +---+---+");
+        
+        print!("     |");
+        print!("{}|", self.get_cell(0));
+        print!("{}|", self.get_cell(1));
+        println!("\n     +---+---+");
+    }
+
+    fn print_2vars(&self) {
+        let a = &self.var_names[0];
+        let b = &self.var_names[1];
+        println!("\n=== DIAGRAMA VEITCH ({}, {}) ===", a, b);
+        println!("      !{}   {}  ({})", b, b, b);
+        println!("     +---+---+");
+        
+        println!("!{}   |{}|{}|", a, self.get_cell(0), self.get_cell(1));
+        println!("     +---+---+");
+        println!(" {}   |{}|{}|", a, self.get_cell(2), self.get_cell(3));
+        println!("     +---+---+");
+    }
+
+    fn print_3vars(&self) {
+        let a = &self.var_names[0];
+        let b = &self.var_names[1];
+        let c = &self.var_names[2];
+        
+        let col_map = [0, 1, 3, 2]; 
+
+        println!("\n=== DIAGRAMA VEITCH ({}, {}, {}) ===", a, b, c);
+        println!("    !{0}!{1}  !{0}{1}   {0}{1}   {0}!{1} ({0} {1})", b, c);
+        println!("     +---+---+---+---+");
 
         for r in 0..2 {
-            let prefix = if r == 0 { format!("!{}", x) } else { format!(" {} ", x) };
-            print!("{} |", prefix);
-            for c in 0..4 {
-                let real_c = col_map[c];
-                let idx = (r << 2) | real_c;
-                if minterm_indices.contains(&idx) {
-                    print!(" {}  |", "1".green().bold());
-                } else {
-                    print!(" {}  |", "0".dimmed());
-                }
+            let prefix = if r == 0 { format!("!{}", a) } else { format!(" {}", a) };
+            print!("{}   |", prefix);
+            
+            for &c_val in &col_map {
+                let idx = (r << 2) | c_val;
+                print!("{}|", self.get_cell(idx));
             }
-            println!("\n     +----+----+----+----+");
+            println!("\n     +---+---+---+---+");
         }
     }
 
-    // Implementarea QUINE-MCCLUSKEY (Simplified)
+    fn print_4vars(&self) {
+        let names = &self.var_names;
+        let (a,b,c,d) = (&names[0], &names[1], &names[2], &names[3]);
+        
+        let gray = [0, 1, 3, 2];
+
+        println!("\n=== DIAGRAMA VEITCH 4 VARS ===");
+        println!("(Sus: {}, {} | Stânga: {}, {})", c, d, a, b);
+        println!("      !{0}!{1} !{0}{1}  {0}{1} {0}!{1}", c, d);
+        println!("      +---+---+---+---+");
+
+        for &r_val in &gray {
+            // Header rând
+            let r_label = match r_val {
+                0 => format!("!{}!{}", a, b),
+                1 => format!("!{}{}", a, b),
+                3 => format!(" {}{}", a, b),
+                2 => format!(" {}!{}", a, b),
+                _ => "".to_string()
+            };
+            print!("{:>5} |", r_label);
+
+            for &c_val in &gray {
+                // Index = (AB << 2) | CD
+                let idx = (r_val << 2) | c_val;
+                print!("{}|", self.get_cell(idx));
+            }
+            println!("\n      +---+---+---+---+");
+        }
+    }
+
+    fn print_5vars(&self) {
+        let names = &self.var_names;
+        let (a,b) = (&names[0], &names[1]);
+        
+        let row_gray = [0, 1, 3, 2];
+        let col_gray = [0, 1, 3, 2, 6, 7, 5, 4];
+
+        println!("\n=== DIAGRAMA VEITCH 5 VARS ===");
+        println!("Rânduri: {}{} | Coloane: {}{}{}", a, b, names[2], names[3], names[4]);
+        
+        println!("       000 001 011 010 110 111 101 100 (Bits: {}{}{})", names[2], names[3], names[4]);
+        println!("      +---+---+---+---+---+---+---+---+");
+
+        for &r_val in &row_gray {
+             let r_label = match r_val {
+                0 => format!("!{}!{}", a, b),
+                1 => format!("!{}{}", a, b),
+                3 => format!(" {}{}", a, b),
+                2 => format!(" {}!{}", a, b),
+                _ => "".to_string()
+            };
+            print!("{:>5} |", r_label);
+
+            for &c_val in &col_gray {
+                let idx = (r_val << 3) | c_val;
+                print!("{}|", self.get_cell(idx));
+            }
+             println!("\n      +---+---+---+---+---+---+---+---+");
+        }
+    }
+
     pub fn simplify(&self) {
         if self.minterms.is_empty() {
             println!("Funcția este mereu 0 (Fals).");
             return;
         }
-
-        // 1. Inițializare termeni
+        
         let mut terms: Vec<Term> = self.minterms.iter()
             .map(|bits| Term::new(bits))
             .collect();
-
         let mut prime_implicants = Vec::new();
 
-        // 2. Bucla de combinare
         loop {
             let mut next_terms = HashSet::new();
-            let mut merged = vec![false; terms.len()];
+            let mut used_indices = HashSet::new();
             let mut any_merge = false;
 
             for i in 0..terms.len() {
                 for j in (i + 1)..terms.len() {
                     if let Some(res) = terms[i].combine(&terms[j]) {
                         next_terms.insert(res);
-                        merged[i] = true;
-                        merged[j] = true;
+                        used_indices.insert(i);
+                        used_indices.insert(j);
                         any_merge = true;
                     }
                 }
             }
 
             for (i, t) in terms.iter().enumerate() {
-                if !merged[i] {
+                if !used_indices.contains(&i) {
                     prime_implicants.push(t.clone());
                 }
             }
@@ -140,7 +234,6 @@ impl BooleanFunction {
             if !any_merge {
                 break;
             }
-
             terms = next_terms.into_iter().collect();
         }
 
@@ -149,16 +242,12 @@ impl BooleanFunction {
             unique_primes.insert(p);
         }
 
-        // Afișare
-        println!("\n=== REZULTAT SIMPLIFICARE (Prime Implicants) ===");
+        println!("\n=== REZULTAT SIMPLIFICARE ===");
         let mut result_strings = Vec::new();
         for t in &unique_primes {
             result_strings.push(t.to_string(&self.var_names));
         }
-        
-        result_strings.sort();
-        
+        result_strings.sort(); // Sortare alfabetică
         println!("{}", result_strings.join(" v ").bold().cyan());
-        println!("{}", "(Acesta este Sum of Prime Implicants)".dimmed());
     }
 }

@@ -43,7 +43,7 @@ show_slide() {
     echo -e "${YELLOW}========================================${NC}"
     echo -e "Formula: ${GREEN}$form${NC}\n"
     
-    echo "$form" | cargo run -q
+    printf "1\n%s\n0\n" "$form" | cargo run -q
 
     echo ""
     echo -e "${YELLOW}----------------------------------------${NC}"
@@ -83,7 +83,6 @@ echo -e "${CYAN}DEMO FINALIZAT.${NC}"
 echo -e "Intrare în Modul Manual (Scrie 'exit' pentru a ieși)..."
 echo -e "${YELLOW}========================================${NC}"
 
-paplay ~/Downloads/heibaieti.mp3
+paplay ~/Downloads/heibaieti.mp3 2>/dev/null 
 
 cargo run -q
-
