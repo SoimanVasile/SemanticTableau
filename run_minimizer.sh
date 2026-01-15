@@ -31,10 +31,29 @@ run_demo() {
 }
 
 # --- TESTE ---
+run_demo "XOR / Paritate (2 Vars)" \
+    "A B" \
+    "0 1\n1 0"
+
+run_demo "Majoritate (3 Vars)" \
+    "x y z" \
+    "0 1 1\n1 0 1\n1 1 0\n1 1 1"
 
 run_demo "3 Variabile (!x)" \
     "x y z" \
     "0 0 0\n0 0 1\n0 1 0\n0 1 1"
+
+run_demo "Detector Nr. Prime (4 Vars)" \
+    "a b c d" \
+    "0 0 1 0\n0 0 1 1\n0 1 0 1\n0 1 1 1\n1 0 1 1\n1 1 0 1"
+
+run_demo "Cele 4 Colțuri (Wrapping)" \
+    "A B C D" \
+    "0 0 0 0\n0 0 1 0\n1 0 0 0\n1 0 1 0"
+
+run_demo "Tabla de Sah (Worst Case)" \
+    "a b c d" \
+    "0 0 0 0\n0 0 1 1\n0 1 0 1\n0 1 1 0\n1 0 0 1\n1 0 1 0\n1 1 0 0\n1 1 1 1"
 
 run_demo "4 Variabile (Pătrat Central)" \
     "a b c d" \
