@@ -29,6 +29,7 @@ declare -a formulas=(
 )
 
 show_slide() {
+    clear
     idx=$1
     total=${#formulas[@]}
     
@@ -43,7 +44,7 @@ show_slide() {
     echo -e "${YELLOW}========================================${NC}"
     echo -e "Formula: ${GREEN}$form${NC}\n"
     
-    printf "1\n%s\n0\n" "$form" | cargo run -q
+    printf "1\n%s\n\n0\n" "$form" | cargo run -q
 
     echo ""
     echo -e "${YELLOW}----------------------------------------${NC}"
